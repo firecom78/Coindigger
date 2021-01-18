@@ -8,7 +8,7 @@
 # install dependencies
 $ npm install
 ```
-hi there
+commit and push test
 ## 2. 사용법
 - 업비트 [Open API](https://upbit.com/mypage/open_api_management)에 방문해 API 키를 발급받습니다.
 
