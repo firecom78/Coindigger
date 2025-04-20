@@ -1,0 +1,113 @@
+// src/components/Dashboard.js
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { getRooms } from '../actions/roomActions';
+import RoomItem from './chat/RoomItem';
+
+const Dashboard = () => {
+  const { t } = useTranslation();
+  const dispatch = useDispatch();
+  const { rooms, loading } = useSelector(state => state.room);
+  const { user } = useSelector(state => state.auth);
+  
+  useEffect(() => {
+    dispatch(getRooms());
+  }, [dispatch]);
+  
+  return (
+    <div className="dashboard">
+      <div className="dashboard-header">
+        <h1>{t('dashboard.title')}</h1>
+        <Link to="/create-room" className="btn btn-primary">
+          {t('dashboard.createRoom')}
+        </Link>
+      </div>
+      
+      {loading ? (
+        <div className="loading-spinner">Loading...</div>
+      ) : rooms.length > 0 ? (
+        <div className="room-list">
+          {rooms.map(room => (
+            <RoomItem key={room._id} room={room} currentUser={user} />
+          ))}
+        </div>
+      ) : (
+        <div className="no-rooms">
+          <p>{t('dashboard.noRooms')}</p>
+          <Link to="/create-room" className="btn btn-primary">
+            {t('dashboard.createFirstRoom')}
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Dashboard;
+
+// src/components/chat/RoomItem.js
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import moment from 'moment';
+import 'moment/locale/ko';
+import 'moment/locale/ms';
+
+const RoomItem = ({ room, currentUser }) => {
+  const { t, i18n } = useTranslation();
+  
+  // 현재 언어에 맞게 moment 로케일 설정
+  moment.locale(i18n.language);
+  
+  // 그룹 채팅방인 경우 이름 표시, 1:1 채팅방인 경우 상대방 이름 표시
+  const getRoomName = () => {
+    if (room.type === 'group') {
+      return room.name;
+    } else {
+      const otherUser = room.participants.find(
+        participant => participant._id !== currentUser._id
+      );
+      return otherUser ? otherUser.username : t('chat.unknownUser');
+    }
+  };
+  
+  // 읽지 않은 메시지 수 계산
+  const getUnreadCount = () => {
+    if (!room.lastMessage) return 0;
+    
+    // 읽지 않은 메시지가 있는지 확인
+    const isRead = room.lastMessage.readBy.includes(currentUser._id);
+    return isRead ? 0 : 1; // 간단하게 마지막 메시지만 확인
+  };
+  
+  // 마지막 메시지 시간 포맷팅
+  const getLastMessageTime = () => {
+    if (!room.lastMessage) return '';
+    
+    const messageDate = new Date(room.lastMessage.createdAt);
+    const now = new Date();
+    
+    // 24시간 이내면 시간만 표시, 그 이상이면 날짜 표시
+    if (now - messageDate < 24 * 60 * 60 * 1000) {
+      return moment(messageDate).format('HH:mm');
+    } else {
+      return moment(messageDate).format('MM/DD');
+    }
+  };
+  
+  return (
+    <Link to={`/chat/${room._id}`} className="room-item">
+      <div className="room-avatar">
+        {room.type === 'group' ? (
+          <div className="group-avatar">{room.name.charAt(0)}</div>
+        ) : (
+          <div className="user-avatar">
+            {getRoomName().charAt(0)}
+          </div>
+        )}
+      </div>
+      
+      <div className="room-info">
+        <div className="room
